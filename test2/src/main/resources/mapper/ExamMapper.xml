@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.exam.mapper.ExamMapper">
+
+    <insert id="insert" parameterType="com.exam.entity.Crimes">
+        insert into crimes (incident_id, offence_code, dispatch_time, victims, city, start_date_time)
+        VALUES
+            (#{incidentId}, #{offenceCode}, #{dispatchTime}, #{victims}, #{city}, #{startDateTime})
+    </insert>
+
+    <select id="queryMaxId" resultType="java.lang.Integer">
+        select max(incident_id) from crimes
+    </select>
+
+    <select id="queryStatVo" resultType="com.exam.entity.StatEntity">
+        SELECT t.*
+        FROM (select  ROW_NUMBER()
+        OVER(PARTITION BY b.year ORDER BY b.risk_Index DESC) as rn,b.* from (
+        SELECT
+        a.year,a.city,
+        a.victims + a.num AS risk_Index
+        FROM
+        (
+        SELECT
+        SUBSTR( c.Start_Date_Time, 1, 4 ) AS YEAR,
+        city,
+        sum( c.victims )/ 365 * 0.8 AS victims,
+        count( c.incident_id )/ 365 * 0.2 AS num
+        FROM
+        crimes c
+        GROUP BY
+        SUBSTR( c.Start_Date_Time, 1, 4 ),
+        city
+        ) a
+        ORDER BY
+        a.YEAR,
+        a.victims + a.num DESC
+
+        ) b) t
+
+        WHERE t.rn &lt;= 3
+    </select>
+
+
+</mapper>
